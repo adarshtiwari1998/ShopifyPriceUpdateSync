@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Table, RefreshCw, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Table, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { GoogleSheet } from '@shared/schema';
@@ -36,34 +36,6 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
     refetch();
   };
 
-  const getStatusBadge = (index: number) => {
-    // Mock status for demo - in real app this would come from sync logs
-    const statuses = ['Updated', 'Pending', 'Not Found'];
-    const status = statuses[index % 3];
-    
-    switch (status) {
-      case 'Updated':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <CheckCircle className="mr-1" size={12} /> Updated
-          </span>
-        );
-      case 'Pending':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-            <Clock className="mr-1" size={12} /> Pending
-          </span>
-        );
-      case 'Not Found':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <AlertTriangle className="mr-1" size={12} /> Not Found
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <Card>
@@ -118,9 +90,6 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-amber-50">
                     Variant Compare At Price
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -134,9 +103,6 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 bg-amber-50" data-testid="cell-compare-price">
                       ${row.compareAtPrice.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap" data-testid="cell-status">
-                      {getStatusBadge(index)}
                     </td>
                   </tr>
                 ))}
