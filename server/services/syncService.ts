@@ -105,6 +105,9 @@ export class SyncService {
     const googleSheets = new GoogleSheetsService(sheet.serviceAccountJson || undefined);
 
     try {
+      // Add ID header to sheet if not present
+      await googleSheets.updateSheetHeader(sheet.sheetId, sheet.sheetName);
+      
       // Get sheet data
       const sheetData = await googleSheets.getSheetData(sheet.sheetId, sheet.sheetName);
       
@@ -181,6 +184,9 @@ export class SyncService {
               newComparePrice: row.compareAtPrice?.toString(),
               shopifyVariantId: variant.id,
             });
+
+            // Update variant ID in Google Sheets
+            await googleSheets.updateVariantId(sheet.sheetId, sheet.sheetName, row.row, variant.id);
 
             updatedCount++;
 

@@ -33,7 +33,7 @@ export class GoogleSheetsService {
 
     const auth = new google.auth.GoogleAuth({
       credentials,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
     this.sheets = google.sheets({ version: 'v4', auth });
@@ -56,7 +56,7 @@ export class GoogleSheetsService {
       // Get all data from the sheet
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
-        range: `${sheetName}!A:C`, // Assuming A=SKU, B=Variant Price, C=Compare At Price
+        range: `${sheetName}!A:D`, // A=SKU, B=Variant Price, C=Compare At Price, D=ID
       });
 
       const rows = response.data.values || [];
@@ -86,6 +86,49 @@ export class GoogleSheetsService {
     } catch (error) {
       console.error(`Error reading sheet ${sheetId}:`, error);
       throw error;
+    }
+  }
+
+  async updateSheetHeader(sheetId: string, sheetName: string = 'Sheet1'): Promise<void> {
+    try {
+      // Check if D1 already has "ID" header
+      const headerResponse = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: sheetId,
+        range: `${sheetName}!D1`,
+      });
+
+      const headerValue = headerResponse.data.values?.[0]?.[0];
+      if (headerValue !== 'ID') {
+        // Add ID header to D1
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: sheetId,
+          range: `${sheetName}!D1`,
+          valueInputOption: 'RAW',
+          requestBody: {
+            values: [['ID']]
+          }
+        });
+        console.log('Added ID header to column D');
+      }
+    } catch (error) {
+      console.error('Error updating sheet header:', error);
+      throw new Error('Failed to update sheet header');
+    }
+  }
+
+  async updateVariantId(sheetId: string, sheetName: string, rowIndex: number, variantId: string): Promise<void> {
+    try {
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: sheetId,
+        range: `${sheetName}!D${rowIndex}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: [[variantId]]
+        }
+      });
+    } catch (error) {
+      console.error(`Error updating variant ID for row ${rowIndex}:`, error);
+      // Don't throw error - continue sync even if ID update fails
     }
   }
 

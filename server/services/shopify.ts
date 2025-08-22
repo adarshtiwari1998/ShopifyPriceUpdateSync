@@ -14,6 +14,8 @@ export interface ShopifyProduct {
 export class ShopifyService {
   private shopUrl: string;
   private accessToken: string;
+  private lastRequestTime = 0;
+  private minRequestInterval = 600; // 600ms = ~1.67 calls per second (safer than 2/sec)
 
   constructor(shopUrl: string, accessToken: string) {
     this.shopUrl = shopUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -21,6 +23,15 @@ export class ShopifyService {
   }
 
   private async makeRequest(endpoint: string, method: string = 'GET', body?: any) {
+    // Rate limiting: ensure minimum time between requests
+    const now = Date.now();
+    const timeSinceLastRequest = now - this.lastRequestTime;
+    if (timeSinceLastRequest < this.minRequestInterval) {
+      const delay = this.minRequestInterval - timeSinceLastRequest;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    this.lastRequestTime = Date.now();
+
     const url = `https://${this.shopUrl}/admin/api/2023-10/${endpoint}`;
     
     const response = await fetch(url, {
@@ -50,12 +61,44 @@ export class ShopifyService {
     }
   }
 
+  private allProducts: any[] = [];
+  private productsLoaded = false;
+
+  private async loadAllProducts(): Promise<void> {
+    if (this.productsLoaded) return;
+    
+    try {
+      this.allProducts = [];
+      let page = 1;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const response = await this.makeRequest(`products.json?limit=250&page=${page}`);
+        
+        if (response.products && response.products.length > 0) {
+          this.allProducts.push(...response.products);
+          page++;
+          // If we got less than 250, we're done
+          hasMore = response.products.length === 250;
+        } else {
+          hasMore = false;
+        }
+      }
+      
+      this.productsLoaded = true;
+      console.log(`Loaded ${this.allProducts.length} products from Shopify`);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      throw error;
+    }
+  }
+
   async findVariantBySku(sku: string): Promise<ShopifyVariant | null> {
     try {
-      // Search for products with the SKU
-      const response = await this.makeRequest(`products.json?limit=250`);
+      // Load all products first time only
+      await this.loadAllProducts();
       
-      for (const product of response.products) {
+      for (const product of this.allProducts) {
         const variant = product.variants.find((v: any) => v.sku === sku);
         if (variant) {
           return {
