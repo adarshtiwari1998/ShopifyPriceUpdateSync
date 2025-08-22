@@ -33,12 +33,39 @@ export default function SheetPreview({ selectedStoreId, liveLogs = [], syncStatu
     enabled: !!primarySheet,
   });
 
+  // Get recent sync sessions to show historical sync status
+  const { data: syncSessions = [] } = useQuery({
+    queryKey: ['/api/sync/sessions', { storeId: selectedStoreId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/sync/sessions?storeId=${selectedStoreId}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!selectedStoreId,
+  });
+
+  // Get logs from the most recent completed session
+  const mostRecentSession = syncSessions.find(session => 
+    session.status === 'completed' || session.status === 'stopped'
+  );
+
+  const { data: historicalLogs = [] } = useQuery({
+    queryKey: ['/api/sync/logs', mostRecentSession?.id],
+    queryFn: async () => {
+      if (!mostRecentSession?.id) return [];
+      const response = await fetch(`/api/sync/logs/${mostRecentSession.id}`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!mostRecentSession?.id,
+  });
+
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
     refetch();
   };
 
-  // Get status for a specific SKU based on live logs
+  // Get status for a specific SKU based on live logs or historical data
   const getSkuStatus = (sku: string) => {
     // If sync is running, check if this SKU has been processed
     if (syncStatus?.status === 'running') {
@@ -52,7 +79,15 @@ export default function SheetPreview({ selectedStoreId, liveLogs = [], syncStatu
       return 'pending';
     }
     
-    // No sync running - no status
+    // If no sync is running, check historical logs from most recent session
+    if (historicalLogs.length > 0) {
+      const historicalLog = historicalLogs.find(log => log.sku === sku);
+      if (historicalLog) {
+        return historicalLog.status; // Show the last sync result
+      }
+    }
+    
+    // No sync data available
     return null;
   };
 
