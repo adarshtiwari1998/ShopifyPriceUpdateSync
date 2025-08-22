@@ -95,11 +95,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/sheets', async (req, res) => {
     try {
+      console.log('Received sheet data:', req.body);
       const sheetData = insertGoogleSheetSchema.parse(req.body);
       const sheet = await storage.createGoogleSheet(sheetData);
       res.json(sheet);
     } catch (error) {
-      res.status(400).json({ error: 'Invalid sheet data' });
+      console.error('Sheet validation error:', error);
+      res.status(400).json({ error: 'Invalid sheet data', details: error });
     }
   });
 

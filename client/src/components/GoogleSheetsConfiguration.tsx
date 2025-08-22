@@ -34,9 +34,7 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
   const primarySheet = sheets.find(sheet => sheet.storeId === selectedStoreId);
 
   const form = useForm({
-    resolver: zodResolver(insertGoogleSheetSchema.extend({
-      serviceAccountJson: insertGoogleSheetSchema.shape.serviceAccountJson,
-    })),
+    resolver: zodResolver(insertGoogleSheetSchema),
     defaultValues: {
       storeId: selectedStoreId,
       sheetId: '',
@@ -93,6 +91,7 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
       ...data,
       serviceAccountJson,
     };
+    console.log('Submitting sheet data:', submitData);
     addSheetMutation.mutate(submitData);
   };
 
