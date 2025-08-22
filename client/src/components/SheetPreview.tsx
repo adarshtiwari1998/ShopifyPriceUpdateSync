@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Table, RefreshCw } from 'lucide-react';
+import { Table, RefreshCw, CheckCircle, Clock, AlertTriangle, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { GoogleSheet } from '@shared/schema';
+import type { GoogleSheet, SyncLog } from '@shared/schema';
 
 interface SheetPreviewProps {
   selectedStoreId: string;
+  liveLogs?: SyncLog[];
+  syncStatus?: any;
 }
 
 interface SheetRowData {
@@ -16,7 +18,7 @@ interface SheetRowData {
   row: number;
 }
 
-export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
+export default function SheetPreview({ selectedStoreId, liveLogs = [], syncStatus }: SheetPreviewProps) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { data: sheets = [] } = useQuery<GoogleSheet[]>({
@@ -34,6 +36,61 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
     refetch();
+  };
+
+  // Get status for a specific SKU based on live logs
+  const getSkuStatus = (sku: string) => {
+    // If sync is running, check if this SKU has been processed
+    if (syncStatus?.status === 'running') {
+      // Check live logs for this SKU
+      const skuLog = liveLogs.find(log => log.sku === sku);
+      if (skuLog) {
+        return skuLog.status; // 'success', 'not_found', 'error'
+      }
+      
+      // If sync is running but this SKU hasn't been processed yet
+      return 'pending';
+    }
+    
+    // No sync running - no status
+    return null;
+  };
+
+  const getStatusBadge = (sku: string) => {
+    const status = getSkuStatus(sku);
+    
+    switch (status) {
+      case 'success':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle className="mr-1" size={12} /> Updated
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+            <Clock className="mr-1" size={12} /> Pending
+          </span>
+        );
+      case 'not_found':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <AlertTriangle className="mr-1" size={12} /> Not Found
+          </span>
+        );
+      case 'error':
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <AlertTriangle className="mr-1" size={12} /> Error
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+            <Minus className="mr-1" size={12} /> Not Synced
+          </span>
+        );
+    }
   };
 
 
@@ -90,6 +147,9 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-amber-50">
                     Variant Compare At Price
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Sync Status
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -103,6 +163,9 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 bg-amber-50" data-testid="cell-compare-price">
                       ${row.compareAtPrice.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap" data-testid="cell-status">
+                      {getStatusBadge(row.sku)}
                     </td>
                   </tr>
                 ))}

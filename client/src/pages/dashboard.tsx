@@ -81,7 +81,11 @@ export default function Dashboard() {
         </div>
 
         {/* Sheet Preview */}
-        <SheetPreview selectedStoreId={selectedStoreId} />
+        <SheetPreview 
+          selectedStoreId={selectedStoreId} 
+          liveLogs={liveLogs}
+          syncStatus={syncStatus}
+        />
       </div>
     </div>
   );
