@@ -23,8 +23,13 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
 
   const { data: currentStatus } = useQuery({
     queryKey: ['/api/sync/status', selectedStoreId],
+    queryFn: async () => {
+      const response = await fetch(`/api/sync/status/${selectedStoreId}`);
+      if (!response.ok) throw new Error('Failed to fetch status');
+      return response.json();
+    },
     enabled: !!selectedStoreId,
-    refetchInterval: syncStatus ? 2000 : false,
+    refetchInterval: 2000, // Always refetch to keep status updated
   });
 
   const primarySheet = sheets.find(sheet => sheet.storeId === selectedStoreId);
@@ -49,7 +54,8 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sync/status'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/status', selectedStoreId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/sessions', { storeId: selectedStoreId }] });
       toast({
         title: 'Success',
         description: 'Sync started successfully',
@@ -69,7 +75,8 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
       return apiRequest('POST', '/api/sync/stop', { storeId: selectedStoreId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sync/status'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/status', selectedStoreId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/sessions', { storeId: selectedStoreId }] });
       toast({
         title: 'Success',
         description: 'Sync stopped successfully',
@@ -97,8 +104,8 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
       return apiRequest('POST', '/api/sync/clear', { storeId: selectedStoreId });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sync/status'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/sync/sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/status', selectedStoreId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/sessions', { storeId: selectedStoreId }] });
       toast({
         title: 'Success',
         description: 'Session cleared successfully',

@@ -10,7 +10,12 @@ interface SyncHistoryProps {
 
 export default function SyncHistory({ selectedStoreId }: SyncHistoryProps) {
   const { data: sessions = [] } = useQuery<SyncSession[]>({
-    queryKey: ['/api/sync/sessions', selectedStoreId],
+    queryKey: ['/api/sync/sessions', { storeId: selectedStoreId }],
+    queryFn: async () => {
+      const response = await fetch(`/api/sync/sessions?storeId=${selectedStoreId}`);
+      if (!response.ok) throw new Error('Failed to fetch sessions');
+      return response.json();
+    },
     enabled: !!selectedStoreId,
   });
 
