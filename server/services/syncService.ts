@@ -80,6 +80,26 @@ export class SyncService {
     }
   }
 
+  async clearSession(storeId: string): Promise<void> {
+    // Stop any active sync
+    this.activeSyncs.set(storeId, false);
+    
+    // Mark any running session as stopped so it goes to history
+    const currentSession = await storage.getCurrentSyncSession(storeId);
+    if (currentSession) {
+      await storage.updateSyncSession(currentSession.id, {
+        status: 'stopped',
+        completedAt: new Date(),
+      });
+    }
+
+    // Broadcast clear update
+    this.broadcastUpdate({
+      type: 'sync_complete',
+      storeId,
+    });
+  }
+
   private async performSync(sessionId: string, store: any, sheet: any): Promise<void> {
     const shopify = new ShopifyService(store.shopifyUrl, store.accessToken);
     const googleSheets = new GoogleSheetsService(sheet.serviceAccountJson || undefined);

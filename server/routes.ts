@@ -196,6 +196,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/sync/clear', async (req, res) => {
+    try {
+      const { storeId } = req.body;
+      
+      if (!storeId) {
+        return res.status(400).json({ error: 'Store ID is required' });
+      }
+
+      await syncService.clearSession(storeId);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to clear session' });
+    }
+  });
+
   app.get('/api/sync/status/:storeId', async (req, res) => {
     try {
       const { storeId } = req.params;

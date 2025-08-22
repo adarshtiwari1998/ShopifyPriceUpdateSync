@@ -92,6 +92,31 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
     stopSyncMutation.mutate();
   };
 
+  const clearSessionMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/sync/clear', { storeId: selectedStoreId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/status'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/sync/sessions'] });
+      toast({
+        title: 'Success',
+        description: 'Session cleared successfully',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to clear session',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleClearSession = () => {
+    clearSessionMutation.mutate();
+  };
+
   const progressPercentage = status && status.totalSkus > 0 
     ? Math.round((status.processedSkus / status.totalSkus) * 100)
     : 0;
@@ -134,9 +159,14 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
                 {startSyncMutation.isPending ? 'Starting...' : 'Start Sync'}
               </Button>
             )}
-            <Button variant="outline" data-testid="button-clear-logs">
+            <Button 
+              variant="outline" 
+              onClick={handleClearSession}
+              disabled={clearSessionMutation.isPending}
+              data-testid="button-clear-logs"
+            >
               <Fan className="mr-2" size={16} />
-              Clear
+              {clearSessionMutation.isPending ? 'Clearing...' : 'Clear'}
             </Button>
           </div>
         </div>
