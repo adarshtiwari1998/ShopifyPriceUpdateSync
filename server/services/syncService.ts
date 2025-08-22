@@ -82,7 +82,7 @@ export class SyncService {
 
   private async performSync(sessionId: string, store: any, sheet: any): Promise<void> {
     const shopify = new ShopifyService(store.shopifyUrl, store.accessToken);
-    const googleSheets = new GoogleSheetsService();
+    const googleSheets = new GoogleSheetsService(sheet.serviceAccountJson || undefined);
 
     try {
       // Get sheet data

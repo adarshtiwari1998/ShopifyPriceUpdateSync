@@ -18,6 +18,7 @@ export const googleSheets = pgTable("google_sheets", {
   storeId: varchar("store_id").notNull().references(() => stores.id),
   sheetId: text("sheet_id").notNull(),
   sheetName: text("sheet_name").default("Sheet1"),
+  serviceAccountJson: text("service_account_json"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });

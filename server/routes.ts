@@ -113,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Sheet not found' });
       }
 
-      const googleSheets = new GoogleSheetsService();
+      const googleSheets = new GoogleSheetsService(sheet.serviceAccountJson || undefined);
       const hasAccess = await googleSheets.testAccess(sheet.sheetId);
       
       res.json({ accessible: hasAccess });
@@ -132,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Sheet not found' });
       }
 
-      const googleSheets = new GoogleSheetsService();
+      const googleSheets = new GoogleSheetsService(sheet.serviceAccountJson || undefined);
       const data = await googleSheets.getSheetData(sheet.sheetId, sheet.sheetName);
       
       // Return first 10 rows for preview
