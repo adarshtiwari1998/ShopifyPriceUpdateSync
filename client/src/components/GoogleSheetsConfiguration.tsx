@@ -26,7 +26,7 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: sheets = [] } = useQuery<GoogleSheet[]>({
+  const { data: sheets = [], refetch: refetchSheets } = useQuery<GoogleSheet[]>({
     queryKey: ['/api/sheets', selectedStoreId],
     enabled: !!selectedStoreId,
   });
@@ -48,8 +48,9 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
       return apiRequest('POST', '/api/sheets', data);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/sheets', selectedStoreId] });
       queryClient.invalidateQueries({ queryKey: ['/api/sheets'] });
-      setIsAddSheetOpen(false);
+      refetchSheets();
       resetForm();
       toast({
         title: 'Success',
