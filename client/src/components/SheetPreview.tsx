@@ -27,7 +27,7 @@ export default function SheetPreview({ selectedStoreId }: SheetPreviewProps) {
   const primarySheet = sheets.find(sheet => sheet.storeId === selectedStoreId);
 
   const { data: previewData = [], isLoading, refetch } = useQuery<SheetRowData[]>({
-    queryKey: ['/api/sheets', primarySheet?.id, 'preview', refreshKey],
+    queryKey: [`/api/sheets/${primarySheet?.id}/preview`, refreshKey],
     enabled: !!primarySheet,
   });
 

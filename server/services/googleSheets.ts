@@ -53,15 +53,6 @@ export class GoogleSheetsService {
 
   async getSheetData(sheetId: string, sheetName: string = 'Sheet1'): Promise<SheetRowData[]> {
     try {
-      console.log(`Attempting to read sheet ${sheetId}, sheet name: ${sheetName}`);
-      
-      // First, let's get the spreadsheet info to see available sheets
-      const spreadsheetInfo = await this.sheets.spreadsheets.get({
-        spreadsheetId: sheetId,
-      });
-      
-      console.log('Available sheets:', spreadsheetInfo.data.sheets?.map(s => s.properties?.title));
-      
       // Get all data from the sheet
       const response = await this.sheets.spreadsheets.values.get({
         spreadsheetId: sheetId,
@@ -69,22 +60,16 @@ export class GoogleSheetsService {
       });
 
       const rows = response.data.values || [];
-      console.log(`Raw data from Google Sheets - Total rows: ${rows.length}`);
-      console.log('First 3 rows:', rows.slice(0, 3));
-      
       const data: SheetRowData[] = [];
 
       // Skip header row and process data
       for (let i = 1; i < rows.length; i++) {
         const row = rows[i];
-        console.log(`Processing row ${i}:`, row);
         
         if (row.length >= 3 && row[0]) { // SKU must exist
           const sku = row[0].toString().trim();
           const variantPrice = parseFloat(row[1]?.toString().replace(/[$,]/g, '') || '0');
           const compareAtPrice = parseFloat(row[2]?.toString().replace(/[$,]/g, '') || '0');
-
-          console.log(`Parsed - SKU: ${sku}, Variant Price: ${variantPrice}, Compare Price: ${compareAtPrice}`);
 
           if (sku && variantPrice > 0) {
             data.push({
@@ -93,15 +78,10 @@ export class GoogleSheetsService {
               compareAtPrice,
               row: i + 1, // 1-based row number
             });
-          } else {
-            console.log(`Skipping row ${i} - SKU: ${sku}, Variant Price: ${variantPrice}`);
           }
-        } else {
-          console.log(`Skipping row ${i} - insufficient data or missing SKU:`, row);
         }
       }
 
-      console.log(`Final processed data count: ${data.length}`);
       return data;
     } catch (error) {
       console.error(`Error reading sheet ${sheetId}:`, error);
