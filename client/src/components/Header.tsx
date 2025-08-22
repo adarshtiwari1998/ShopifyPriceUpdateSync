@@ -89,7 +89,7 @@ export default function Header({ stores, selectedStoreId, onStoreChange, selecte
                 </SelectTrigger>
                 <SelectContent>
                   {stores.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <SelectItem value="no-store" disabled>
                       Add a store to get started
                     </SelectItem>
                   ) : (
