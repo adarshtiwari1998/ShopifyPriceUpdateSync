@@ -227,105 +227,89 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
               )}
             </>
           ) : (
-            <div className="text-center py-6">
-              <Table className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">No Google Sheet configured</p>
-              <Dialog open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-foxx-green hover:bg-green-700" data-testid="button-add-sheet">
-                    Add Google Sheet
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>
-                      {step === 'credentials' ? 'Upload Service Account' : 'Add Google Sheet'}
-                    </DialogTitle>
-                  </DialogHeader>
+            <div className="space-y-6">
+              {/* Step 1: Upload Service Account JSON */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-gray-900">Upload Service Account JSON</h4>
+                
+                {serviceAccountJson ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="text-foxx-green" size={16} />
+                      <span className="text-sm font-medium text-green-800">Service Account Loaded</span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      {JSON.parse(serviceAccountJson).client_email}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div className="text-center">
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600 mb-2">Upload Google Service Account JSON</p>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="service-account-upload-inline"
+                        data-testid="input-service-account-file"
+                      />
+                      <label htmlFor="service-account-upload-inline">
+                        <Button type="button" variant="outline" className="cursor-pointer" asChild>
+                          <span>Choose File</span>
+                        </Button>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Step 2: Configure Sheet Details */}
+              {serviceAccountJson && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-900">Configure Google Sheet</h4>
                   
-                  {step === 'credentials' ? (
-                    <div className="space-y-4">
-                      <div className="text-sm text-gray-600">
-                        <p className="mb-2">Upload your Google Service Account JSON file to authenticate with Google Sheets API.</p>
-                        <p className="text-xs text-gray-500">The JSON file should contain your service account credentials from Google Cloud Console.</p>
-                      </div>
-                      
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-2">Click to upload service account JSON</p>
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={handleFileUpload}
-                          className="hidden"
-                          id="service-account-upload"
-                          data-testid="input-service-account-file"
-                        />
-                        <label htmlFor="service-account-upload">
-                          <Button type="button" variant="outline" className="cursor-pointer" asChild>
-                            <span>Choose File</span>
-                          </Button>
-                        </label>
-                      </div>
-                      
-                      <div className="text-center">
-                        <Button type="button" variant="outline" onClick={() => setIsAddSheetOpen(false)}>
-                          Cancel
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="sheetId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sheet ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="1KzGBkHn7xYGLaVSKqZSEUVReAHEcSkzfWRPfqjhN-4" {...field} data-testid="input-sheet-id" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="sheetName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sheet Name (Optional)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Sheet1" {...field} data-testid="input-sheet-name" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <Button type="button" variant="outline" onClick={resetForm}>
+                          Reset
+                        </Button>
+                        <Button type="submit" disabled={addSheetMutation.isPending} data-testid="button-save-sheet" className="bg-foxx-green hover:bg-green-700">
+                          {addSheetMutation.isPending ? 'Adding...' : 'Add Sheet'}
                         </Button>
                       </div>
-                    </div>
-                  ) : (
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <div className="flex items-center space-x-2">
-                            <CheckCircle className="text-green-600" size={16} />
-                            <span className="text-sm font-medium text-green-800">Service Account Loaded</span>
-                          </div>
-                        </div>
-                        
-                        <FormField
-                          control={form.control}
-                          name="sheetId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Sheet ID</FormLabel>
-                              <FormControl>
-                                <Input placeholder="1KzGBkHn7xYGLaVSKqZSEUVReAHEcSkzfWRPfqjhN-4" {...field} data-testid="input-sheet-id" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="sheetName"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Sheet Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Sheet1" {...field} data-testid="input-sheet-name" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div className="flex justify-end space-x-2">
-                          <Button type="button" variant="outline" onClick={resetForm}>
-                            Back
-                          </Button>
-                          <Button type="button" variant="outline" onClick={() => setIsAddSheetOpen(false)}>
-                            Cancel
-                          </Button>
-                          <Button type="submit" disabled={addSheetMutation.isPending} data-testid="button-save-sheet">
-                            {addSheetMutation.isPending ? 'Adding...' : 'Add Sheet'}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  )}
-                </DialogContent>
-              </Dialog>
+                    </form>
+                  </Form>
+                </div>
+              )}
             </div>
           )}
         </div>
