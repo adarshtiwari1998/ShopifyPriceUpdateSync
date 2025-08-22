@@ -66,9 +66,11 @@ export default function Header({ stores, selectedStoreId, onStoreChange, selecte
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-foxx-blue rounded-lg flex items-center justify-center">
-                <FlaskConical className="text-white" size={16} />
-              </div>
+              <img 
+                src="https://www.foxxlifesciences.com/cdn/shop/t/38/assets/logo.png?v=91111398020413059131740668507" 
+                alt="Foxx Life Sciences" 
+                className="h-8 w-auto"
+              />
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Foxx Life Sciences</h1>
                 <p className="text-xs text-gray-500">Internal Tools</p>
