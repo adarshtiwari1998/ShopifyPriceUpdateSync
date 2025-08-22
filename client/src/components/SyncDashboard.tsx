@@ -128,7 +128,7 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
     ? Math.round((status.processedSkus / status.totalSkus) * 100)
     : 0;
 
-  const isRunning = status?.status === 'running' || startSyncMutation.isPending;
+  const isRunning = (status?.status === 'running' || status?.type === 'sync_progress') || startSyncMutation.isPending;
 
   return (
     <Card className="mb-8">
