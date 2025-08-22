@@ -72,7 +72,6 @@ export default function Header({ stores, selectedStoreId, onStoreChange, selecte
                 className="h-8 w-auto"
               />
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">Foxx Life Sciences</h1>
                 <p className="text-xs text-gray-500">Internal Tools</p>
               </div>
             </div>
@@ -86,14 +85,20 @@ export default function Header({ stores, selectedStoreId, onStoreChange, selecte
               <label className="text-xs font-medium text-gray-500 block mb-1">Store:</label>
               <Select value={selectedStoreId} onValueChange={onStoreChange}>
                 <SelectTrigger className="w-48" data-testid="select-store">
-                  <SelectValue placeholder="Select store" />
+                  <SelectValue placeholder={stores.length === 0 ? "No stores available" : "Select store"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {stores.map((store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {store.name}
+                  {stores.length === 0 ? (
+                    <SelectItem value="" disabled>
+                      Add a store to get started
                     </SelectItem>
-                  ))}
+                  ) : (
+                    stores.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
