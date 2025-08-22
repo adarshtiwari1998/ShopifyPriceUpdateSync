@@ -7,8 +7,20 @@ export interface SheetRowData {
   row: number;
 }
 
+interface GoogleSheetsQueueItem {
+  operation: 'get' | 'update';
+  sheetId: string;
+  range: string;
+  values?: any[][];
+  resolve: (value: any) => void;
+  reject: (error: any) => void;
+}
+
 export class GoogleSheetsService {
   private sheets: any;
+  private requestQueue: GoogleSheetsQueueItem[] = [];
+  private isProcessingQueue = false;
+  private queueDelay = 500; // 500ms between Google Sheets requests
 
   constructor(serviceAccountJson?: string) {
     let credentials;
@@ -39,6 +51,62 @@ export class GoogleSheetsService {
     this.sheets = google.sheets({ version: 'v4', auth });
   }
 
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.requestQueue.length === 0) {
+      return;
+    }
+
+    this.isProcessingQueue = true;
+
+    while (this.requestQueue.length > 0) {
+      const item = this.requestQueue.shift()!;
+      
+      try {
+        // Add delay between requests (queue system)
+        await new Promise(resolve => setTimeout(resolve, this.queueDelay));
+        
+        let result;
+        if (item.operation === 'get') {
+          result = await this.sheets.spreadsheets.values.get({
+            spreadsheetId: item.sheetId,
+            range: item.range,
+          });
+        } else if (item.operation === 'update') {
+          result = await this.sheets.spreadsheets.values.update({
+            spreadsheetId: item.sheetId,
+            range: item.range,
+            valueInputOption: 'RAW',
+            requestBody: {
+              values: item.values
+            }
+          });
+        }
+        
+        item.resolve(result);
+      } catch (error) {
+        item.reject(error);
+      }
+    }
+
+    this.isProcessingQueue = false;
+  }
+
+  private async queueRequest(operation: 'get' | 'update', sheetId: string, range: string, values?: any[][]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({
+        operation,
+        sheetId,
+        range,
+        values,
+        resolve,
+        reject
+      });
+
+      // Start processing queue
+      this.processQueue();
+    });
+  }
+
   async testAccess(sheetId: string): Promise<boolean> {
     try {
       await this.sheets.spreadsheets.get({
@@ -53,11 +121,8 @@ export class GoogleSheetsService {
 
   async getSheetData(sheetId: string, sheetName: string = 'Sheet1'): Promise<SheetRowData[]> {
     try {
-      // Get all data from the sheet
-      const response = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: `${sheetName}!A:D`, // A=SKU, B=Variant Price, C=Compare At Price, D=ID
-      });
+      // Get all data from the sheet using queue
+      const response = await this.queueRequest('get', sheetId, `${sheetName}!A:D`);
 
       const rows = response.data.values || [];
       const data: SheetRowData[] = [];
@@ -91,23 +156,13 @@ export class GoogleSheetsService {
 
   async updateSheetHeader(sheetId: string, sheetName: string = 'Sheet1'): Promise<void> {
     try {
-      // Check if D1 already has "ID" header
-      const headerResponse = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: sheetId,
-        range: `${sheetName}!D1`,
-      });
+      // Check if D1 already has "ID" header using queue
+      const headerResponse = await this.queueRequest('get', sheetId, `${sheetName}!D1`);
 
       const headerValue = headerResponse.data.values?.[0]?.[0];
       if (headerValue !== 'ID') {
-        // Add ID header to D1
-        await this.sheets.spreadsheets.values.update({
-          spreadsheetId: sheetId,
-          range: `${sheetName}!D1`,
-          valueInputOption: 'RAW',
-          requestBody: {
-            values: [['ID']]
-          }
-        });
+        // Add ID header to D1 using queue
+        await this.queueRequest('update', sheetId, `${sheetName}!D1`, [['ID']]);
         console.log('Added ID header to column D');
       }
     } catch (error) {
@@ -118,14 +173,8 @@ export class GoogleSheetsService {
 
   async updateVariantId(sheetId: string, sheetName: string, rowIndex: number, variantId: string): Promise<void> {
     try {
-      await this.sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId,
-        range: `${sheetName}!D${rowIndex}`,
-        valueInputOption: 'RAW',
-        requestBody: {
-          values: [[variantId]]
-        }
-      });
+      // Use queue system for updating variant ID
+      await this.queueRequest('update', sheetId, `${sheetName}!D${rowIndex}`, [[variantId]]);
     } catch (error) {
       console.error(`Error updating variant ID for row ${rowIndex}:`, error);
       // Don't throw error - continue sync even if ID update fails

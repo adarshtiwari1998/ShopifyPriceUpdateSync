@@ -11,27 +11,51 @@ export interface ShopifyProduct {
   variants: ShopifyVariant[];
 }
 
+interface QueueItem {
+  endpoint: string;
+  method: string;
+  body?: any;
+  resolve: (value: any) => void;
+  reject: (error: any) => void;
+}
+
 export class ShopifyService {
   private shopUrl: string;
   private accessToken: string;
-  private lastRequestTime = 0;
-  private minRequestInterval = 600; // 600ms = ~1.67 calls per second (safer than 2/sec)
+  private requestQueue: QueueItem[] = [];
+  private isProcessingQueue = false;
+  private queueDelay = 800; // 800ms between requests (safer rate limiting)
 
   constructor(shopUrl: string, accessToken: string) {
     this.shopUrl = shopUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
     this.accessToken = accessToken;
   }
 
-  private async makeRequest(endpoint: string, method: string = 'GET', body?: any) {
-    // Rate limiting: ensure minimum time between requests
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    if (timeSinceLastRequest < this.minRequestInterval) {
-      const delay = this.minRequestInterval - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, delay));
+  private async processQueue(): Promise<void> {
+    if (this.isProcessingQueue || this.requestQueue.length === 0) {
+      return;
     }
-    this.lastRequestTime = Date.now();
 
+    this.isProcessingQueue = true;
+
+    while (this.requestQueue.length > 0) {
+      const item = this.requestQueue.shift()!;
+      
+      try {
+        // Add delay between requests (queue system)
+        await new Promise(resolve => setTimeout(resolve, this.queueDelay));
+        
+        const result = await this.executeRequest(item.endpoint, item.method, item.body);
+        item.resolve(result);
+      } catch (error) {
+        item.reject(error);
+      }
+    }
+
+    this.isProcessingQueue = false;
+  }
+
+  private async executeRequest(endpoint: string, method: string = 'GET', body?: any) {
     const url = `https://${this.shopUrl}/admin/api/2023-10/${endpoint}`;
     
     const response = await fetch(url, {
@@ -49,6 +73,21 @@ export class ShopifyService {
     }
 
     return await response.json();
+  }
+
+  private async makeRequest(endpoint: string, method: string = 'GET', body?: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.requestQueue.push({
+        endpoint,
+        method,
+        body,
+        resolve,
+        reject
+      });
+
+      // Start processing queue
+      this.processQueue();
+    });
   }
 
   async testConnection(): Promise<boolean> {

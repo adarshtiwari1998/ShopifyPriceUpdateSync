@@ -121,7 +121,7 @@ export class SyncService {
       let notFoundCount = 0;
       let errorCount = 0;
 
-      // Process each SKU
+      // Process each SKU using queue system with delays
       for (const row of sheetData) {
         // Check if sync should stop
         if (!this.activeSyncs.get(store.id)) {
@@ -138,6 +138,11 @@ export class SyncService {
             processedSkus: processedCount,
             totalSkus: sheetData.length,
           });
+
+          // Add delay between each SKU processing (queue system)
+          if (processedCount > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second between each SKU
+          }
 
           // Find variant in Shopify
           const variant = await shopify.findVariantBySku(row.sku);
