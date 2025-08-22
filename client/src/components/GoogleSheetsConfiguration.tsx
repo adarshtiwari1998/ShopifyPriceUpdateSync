@@ -28,10 +28,13 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
 
   const { data: sheets = [], refetch: refetchSheets } = useQuery<GoogleSheet[]>({
     queryKey: ['/api/sheets', selectedStoreId],
+    queryFn: () => fetch(`/api/sheets?storeId=${selectedStoreId}`).then(res => res.json()),
     enabled: !!selectedStoreId,
   });
 
+  console.log('Sheets data:', sheets);
   const primarySheet = sheets.find(sheet => sheet.storeId === selectedStoreId);
+  console.log('Primary sheet:', primarySheet);
 
   const form = useForm({
     resolver: zodResolver(insertGoogleSheetSchema),
