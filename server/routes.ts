@@ -140,7 +140,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return first 10 rows for preview
       res.json(data.slice(0, 10));
     } catch (error) {
+      console.error(`Error in sheet preview for ${id}:`, error);
       res.status(500).json({ error: 'Failed to fetch sheet preview' });
+    }
+  });
+
+  // Get sheet SKU count
+  app.get('/api/sheets/:id/count', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sheet = await storage.getGoogleSheet(id);
+      
+      if (!sheet) {
+        return res.status(404).json({ error: 'Sheet not found' });
+      }
+
+      const googleSheets = new GoogleSheetsService(sheet.serviceAccountJson || undefined);
+      const data = await googleSheets.getSheetData(sheet.sheetId, sheet.sheetName);
+      
+      res.json({ totalSkus: data.length });
+    } catch (error) {
+      console.error(`Error getting SKU count for sheet ${id}:`, error);
+      res.status(500).json({ error: 'Failed to get SKU count' });
     }
   });
 

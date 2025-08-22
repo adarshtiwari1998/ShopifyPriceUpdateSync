@@ -27,8 +27,18 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
     refetchInterval: syncStatus ? 2000 : false,
   });
 
-  const status = syncStatus || currentStatus;
   const primarySheet = sheets.find(sheet => sheet.storeId === selectedStoreId);
+
+  // Get SKU count from Google Sheet
+  const { data: sheetSkuCount } = useQuery({
+    queryKey: ['/api/sheets', primarySheet?.id, 'count'],
+    enabled: !!primarySheet?.id,
+    refetchInterval: false,
+  });
+
+  const status = syncStatus || currentStatus;
+  // Use sheet SKU count if no sync is running, otherwise use sync status
+  const totalSkus = status?.totalSkus || sheetSkuCount?.totalSkus || 0;
 
   const startSyncMutation = useMutation({
     mutationFn: async () => {
@@ -138,7 +148,7 @@ export default function SyncDashboard({ selectedStoreId, syncStatus }: SyncDashb
               <div>
                 <p className="text-sm font-medium text-blue-800">Total SKUs</p>
                 <p className="text-2xl font-bold text-blue-900" data-testid="metric-total-skus">
-                  {status?.totalSkus?.toLocaleString() || '0'}
+                  {totalSkus.toLocaleString()}
                 </p>
               </div>
               <Box className="text-blue-600" size={24} />
