@@ -56,7 +56,8 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
         description: 'Google Sheet added successfully',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Add sheet mutation error:', error);
       toast({
         title: 'Error',
         description: 'Failed to add Google Sheet',
@@ -87,8 +88,13 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
   });
 
   const onSubmit = (data: any) => {
+    console.log('Form data received:', data);
+    console.log('Service account JSON:', serviceAccountJson);
+    
     const submitData = {
-      ...data,
+      storeId: selectedStoreId,
+      sheetId: data.sheetId,
+      sheetName: data.sheetName || 'Sheet1',
       serviceAccountJson,
     };
     console.log('Submitting sheet data:', submitData);
@@ -279,7 +285,7 @@ export default function GoogleSheetsConfiguration({ selectedStoreId }: GoogleShe
                           <FormItem>
                             <FormLabel>Sheet ID</FormLabel>
                             <FormControl>
-                              <Input placeholder="1KzGBkHn7xYGLaVSKqZSEUVReAHEcSkzfWRPfqjhN-4" {...field} data-testid="input-sheet-id" />
+                              <Input {...field} data-testid="input-sheet-id" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
